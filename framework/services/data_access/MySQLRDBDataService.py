@@ -50,6 +50,30 @@ class MySQLRDBDataService(DataDataService):
 
         return result
 
+    def get_all_data(self, database_name: str, collection_name: str, skip: int = 0, limit: int = 10) -> list[dict]:
+        """
+        Retrieve all data objects from the specified database and collection/table with pagination.
+        :param skip: Number of records to skip.
+        :param limit: Number of records to retrieve.
+        :return: List of data objects.
+        """
+        connection = None
+        results = []
+
+        try:
+            sql_statement = f"SELECT * FROM `{database_name}`.`{collection_name}` LIMIT %s OFFSET %s"
+            connection = self._get_connection()
+            cursor = connection.cursor()
+            cursor.execute(sql_statement, (limit, skip))
+            results = cursor.fetchall()
+
+        except Exception as e:
+            print(f"Error in get_all_data: {e}")
+            if connection:
+                connection.close()
+
+        return results
+
     def update_data(self,
                     database_name: str,
                     collection_name: str,

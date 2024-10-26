@@ -1,8 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Query
 
 from app.models.recipe import Recipe
 from app.resources.recipe_resource import RecipeResource
 from app.services.service_factory import ServiceFactory
+from typing import List
 
 router = APIRouter()
 
@@ -43,3 +44,19 @@ async def delete_recipe(name: str):
     res.delete_by_key(name)
     return {"message": f"Recipe with id {name} has been deleted"}
 
+@router.get("/recipes", tags=["recipes"], response_model=List[Recipe])
+async def get_all_recipes(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(10, ge=1, le=100, description="Number of records to retrieve")
+) -> List[Recipe]:
+    """
+    Retrieve all recipes with pagination.
+    :param skip: Number of records to skip.
+    :param limit: Number of records to retrieve.
+    :return: List of Recipe objects.
+    """
+    res = ServiceFactory.get_service("RecipeResource")
+    recipes = res.get_all(skip=skip, limit=limit)
+    if not recipes:
+        raise HTTPException(status_code=404, detail="No recipes found")
+    return recipes

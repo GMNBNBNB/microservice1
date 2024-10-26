@@ -1,5 +1,5 @@
 from typing import Any
-
+from typing import List
 from framework.resources.base_resource import BaseResource
 
 from app.models.recipe import Recipe
@@ -32,6 +32,18 @@ class RecipeResource(BaseResource):
         )
         result = Recipe(**result)
         return result
+
+    def get_all(self, skip: int = 0, limit: int = 10) -> List[Recipe]:
+        """
+        Retrieve all recipes from the database with pagination.
+        :param skip: Number of records to skip.
+        :param limit: Number of records to retrieve.
+        :return: List of Recipe objects.
+        """
+        results = self.data_service.get_all_data(
+            self.database, self.recipes, skip=skip, limit=limit
+        )
+        return [Recipe(**item) for item in results]
 
     def update_by_key(self, key: str, data: dict) -> Recipe:
         d_service = self.data_service
