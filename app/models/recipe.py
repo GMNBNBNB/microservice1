@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from typing import Optional,List
-
-from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, Field
 
 class Ingredient(BaseModel):
     ingredient_name: str
     quantity: str
 
 class Recipe(BaseModel):
-    recipe_id: Optional[int] = None
+    recipe_id: int
     name: str
     ingredients: List[Ingredient]
     steps: Optional[str] = None
@@ -18,6 +17,7 @@ class Recipe(BaseModel):
     calories: Optional[int] = None
     rating: Optional[float] = None
     kid_friendly: Optional[bool] = None
+    links: Optional[Dict[str, Any]] = Field(None, alias="links")  # 添加 _links 字段
 
     class Config:
         json_schema_extra  = {
@@ -67,3 +67,14 @@ class Recipe(BaseModel):
                 }
             }
         }
+
+class PaginationLinks(BaseModel):
+    current: Dict[str, str]
+    next: Optional[Dict[str, str]] = None
+    previous: Optional[Dict[str, str]] = None
+    first: Dict[str, str]
+    last: Dict[str, str]
+
+class PaginatedRecipes(BaseModel):
+    recipes: List[Recipe]
+    pagination: PaginationLinks
