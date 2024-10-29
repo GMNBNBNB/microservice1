@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
-from app.models.recipe import Recipe
+from app.models.recipe import Recipe, PaginatedResponse
 from app.resources.recipe_resource import RecipeResource
 from app.services.service_factory import ServiceFactory
 from typing import List
@@ -56,39 +56,51 @@ async def delete_recipe(name: str):
     return {"message": f"Recipe with id {name} has been deleted"}
 
 
-@router.get("/recipes", tags=["recipes"], response_model=List[Recipe])
+@router.get("/recipes", tags=["recipes"], response_model=PaginatedResponse)
 async def get_all_recipes(
+        request: Request,
         skip: int = Query(0, ge=0, description="Number of records to skip"),
         limit: int = Query(10, ge=1, le=100, description="Number of records to retrieve")
-) -> List[Recipe]:
+) -> PaginatedResponse:
     """
     Retrieve all recipes with pagination.
-    :param skip: Number of records to skip.
-    :param limit: Number of records to retrieve.
-    :return: List of Recipe objects with hypermedia links.
     """
-    res = ServiceFactory.get_service("RecipeResource")
+    res: RecipeResource = ServiceFactory.get_service("RecipeResource")
     recipes = res.get_all(skip=skip, limit=limit)
+    total_count = res.get_total_count()
 
-    # 如果没有找到食谱，返回空列表而不是 404
-    if not recipes:
-        return []
+    # 构建基本 URL
+    base_url = str(request.url).split('?')[0]
 
-    # 为每个食谱添加 _links 字段并转换为 Recipe 模型
+    # 当前页面的查询参数
+    current_query = f"skip={skip}&limit={limit}"
+    current_url = f"{base_url}?{current_query}"
+
+    # 生成分页链接
+    next_skip = skip + limit
+    previous_skip = skip - limit if skip - limit >= 0 else 0
+    last_skip = ((total_count - 1) // limit) * limit if limit > 0 else 0
+
+    links = {
+        "current": {"href": current_url},
+        "first": {"href": f"{base_url}?skip=0&limit={limit}"},
+        "last": {"href": f"{base_url}?skip={last_skip}&limit={limit}"}
+    }
+
+    if next_skip < total_count:
+        links["next"] = {"href": f"{base_url}?skip={next_skip}&limit={limit}"}
+    if skip > 0:
+        links["previous"] = {"href": f"{base_url}?skip={previous_skip}&limit={limit}"}
+
+    # 为每个食谱添加 _links 字段
     updated_recipes = []
     for recipe in recipes:
-        # 将 Pydantic 模型转换为字典
-        recipe_data = recipe.dict() if hasattr(recipe, 'dict') else recipe.copy()
-
-        # 添加 _links 字段
+        recipe_data = recipe.dict()
         recipe_data["links"] = {
             "self": {"href": f"/recipes/{recipe_data['name']}"},
             "update": {"href": f"/recipes/{recipe_data['name']}", "method": "PUT"},
             "delete": {"href": f"/recipes/{recipe_data['name']}", "method": "DELETE"}
         }
+        updated_recipes.append(Recipe(**recipe_data))
 
-        # 将字典转换回 Recipe 模型
-        updated_recipe = Recipe(**recipe_data)
-        updated_recipes.append(updated_recipe)
-
-    return updated_recipes
+    return PaginatedResponse(items=updated_recipes, links=links)

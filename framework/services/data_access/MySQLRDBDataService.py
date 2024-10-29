@@ -23,6 +23,27 @@ class MySQLRDBDataService(DataDataService):
         )
         return connection
 
+    def get_total_count(self, database_name: str, collection_name: str) -> int:
+        """
+        获取指定数据库和集合/表的总记录数。
+        """
+        connection = None
+        try:
+            connection = self._get_connection()
+            cursor = connection.cursor()
+            sql = f"SELECT COUNT(*) as count FROM `{database_name}`.`{collection_name}`"
+            cursor.execute(sql)
+            result = cursor.fetchone()
+            if result:
+                return result["count"]
+            return 0
+        except Exception as e:
+            print(f"Error in get_total_count: {e}")
+            raise e
+        finally:
+            if connection:
+                connection.close()
+
     def get_data_object(self,
                         database_name: str,
                         collection_name: str,

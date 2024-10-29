@@ -18,6 +18,9 @@ class RecipeResource(BaseResource):
         self.recipes = "recipes"
         self.key_field="name"
 
+    def get_total_count(self) -> int:
+        return self.data_service.get_total_count(self.database, self.recipes)
+
     def create_by_key(self, data: dict) -> Recipe:
         d_service = self.data_service
         d_service.insert_data(

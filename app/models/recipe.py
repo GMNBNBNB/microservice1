@@ -67,3 +67,7 @@ class Recipe(BaseModel):
                 }
             }
         }
+
+class PaginatedResponse(BaseModel):
+    items: List[Any]  # 使用 Any 以支持不同类型的项目，这里为 Recipe
+    links: Dict[str, Any]
