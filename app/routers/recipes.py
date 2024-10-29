@@ -15,9 +15,9 @@ async def create_recipe(recipe: Recipe) -> Recipe:
         new_recipe = res.create_by_key(recipe.dict())
         recipe_data = new_recipe.dict()  # 确保 result 有 dict() 方法返回字典
         recipe_data["links"] = {
-            "self": {"href": f"/recipes/{recipe_data.get("name")}"},
-            "update": {"href": f"/recipes/{recipe_data.get("name")}", "method": "PUT"},
-            "delete": {"href": f"/recipes/{recipe_data.get("name")}", "method": "DELETE"}
+            "self": {"href": f"/recipes/{recipe_data.get('name')}"},
+            "update": {"href": f"/recipes/{recipe_data.get('name')}", "method": "PUT"},
+            "delete": {"href": f"/recipes/{recipe_data.get('name')}", "method": "DELETE"}
         }
 
         return Recipe(**recipe_data)
