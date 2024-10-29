@@ -67,14 +67,3 @@ class Recipe(BaseModel):
                 }
             }
         }
-
-class PaginationLinks(BaseModel):
-    current: Dict[str, str]
-    next: Optional[Dict[str, str]] = None
-    previous: Optional[Dict[str, str]] = None
-    first: Dict[str, str]
-    last: Dict[str, str]
-
-class PaginatedRecipes(BaseModel):
-    recipes: List[Recipe]
-    pagination: PaginationLinks
