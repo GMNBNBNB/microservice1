@@ -28,25 +28,50 @@ class MySQLRDBDataService(DataDataService):
                         collection_name: str,
                         key_field: str,
                         key_value: str):
-        """
-        See base class for comments.
-        """
 
         connection = None
         result = None
 
         try:
-            sql_statement = f"SELECT * FROM {database_name}.{collection_name} " + \
-                        f"where {key_field}=%s"
+            # 构建 SQL 查询语句
+            sql_statement = f"SELECT r.recipe_id, r.name, r.steps, r.time_to_cook, r.meal_type, r.calories, r.rating, r.kid_friendly," \
+                            f"i.ingredient_name, i.quantity " \
+                            f"FROM {database_name}.{collection_name} r " \
+                            f"LEFT JOIN {database_name}.ingredients i ON r.name = i.recipe_name " \
+                            f"WHERE {key_field}=%s"
+
             connection = self._get_connection()
             cursor = connection.cursor()
             cursor.execute(sql_statement, [key_value])
-            result = cursor.fetchone()
+            rows = cursor.fetchall()
 
+            if rows:
+                recipe = {
+                    "recipe_id": rows[0]["recipe_id"],
+                    "name": rows[0]["name"],
+                    "steps": rows[0]["steps"],
+                    "time_to_cook": rows[0]["time_to_cook"],
+                    "meal_type": rows[0]["meal_type"],
+                    "calories": rows[0]["calories"],
+                    "rating": rows[0]["rating"],
+                    "kid_friendly": rows[0]["kid_friendly"],
+                    "ingredients": []
+                }
+
+                for row in rows:
+                    if row["ingredient_name"] is not None:
+                        recipe["ingredients"].append({
+                            "ingredient_name": row["ingredient_name"],
+                            "quantity": row["quantity"]
+                        })
+
+                result = recipe
 
         except Exception as e:
+            print(f"An error occurred: {e}")
             if connection:
                 connection.close()
+            raise
 
         return result
 
