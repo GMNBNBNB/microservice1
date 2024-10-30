@@ -13,7 +13,10 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*']
+    allow_origins=["*"],  # You can specify the origin here, e.g., ["http://localhost:4200"]
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all HTTP methods (GET, POST, DELETE, etc.)
+    allow_headers=["*"],  # Allows all headers
 )
 
 # Middleware to log requests before and after
