@@ -8,7 +8,7 @@ class Ingredient(BaseModel):
     quantity: str
 
 class Recipe(BaseModel):
-    recipe_id: int
+    recipe_id: Optional[int] = None
     name: str
     ingredients: List[Ingredient]
     steps: Optional[str] = None
@@ -16,58 +16,56 @@ class Recipe(BaseModel):
     meal_type: Optional[str] = None
     calories: Optional[int] = None
     rating: Optional[float] = None
-    kid_friendly: Optional[bool] = None
-    links: Optional[Dict[str, Any]] = Field(None, alias="links")  # 添加 _links 字段
+    links: Optional[Dict[str, Any]] = Field(None, alias="links")
 
     class Config:
         json_schema_extra  = {
             "example": {
                 "recipe_id": 171,
-                  "name": "Avocado Toast",
-                  "ingredients": [
+                "name": "Avocado Toast",
+                "ingredients": [
                     {
-                      "ingredient_name": "Avocado",
-                      "quantity": "1 large"
+                        "ingredient_name": "Avocado",
+                        "quantity": "1 large"
                     },
                     {
-                      "ingredient_name": "Bread",
-                      "quantity": "2 slices"
+                        "ingredient_name": "Bread",
+                        "quantity": "2 slices"
                     },
                     {
-                      "ingredient_name": "Lime",
-                      "quantity": "1/2"
+                        "ingredient_name": "Lime",
+                        "quantity": "1/2"
                     },
                     {
-                      "ingredient_name": "Olive oil",
-                      "quantity": "1 tbsp"
+                        "ingredient_name": "Olive oil",
+                        "quantity": "1 tbsp"
                     },
                     {
-                      "ingredient_name": "Salt",
-                      "quantity": "1/4 tsp"
+                        "ingredient_name": "Salt",
+                        "quantity": "1/4 tsp"
                     }
-                  ],
-                  "steps": "1. Toast bread. 2. Mash avocado with lime. 3. Spread on toast and season.",
-                  "time_to_cook": 10,
-                  "meal_type": "breakfast",
-                  "calories": 300,
-                  "rating": 4.4,
-                  "kid_friendly": True,
-                  "_links": {
+                ],
+                "steps": "1. Toast bread. 2. Mash avocado with lime. 3. Spread on toast and season.",
+                "time_to_cook": 10,
+                "meal_type": "breakfast",
+                "calories": 300,
+                "rating": 4.4,
+                "links": {
                     "self": {
-                      "href": "/recipes/Avocado Toast"
+                        "href": "/recipes/171"
                     },
                     "update": {
-                      "href": "/recipes/Avocado Toast",
-                      "method": "PUT"
+                        "href": "/recipes/171",
+                        "method": "PUT"
                     },
                     "delete": {
-                      "href": "/recipes/Avocado Toast",
-                      "method": "DELETE"
+                        "href": "/recipes/171",
+                        "method": "DELETE"
                     }
                 }
             }
         }
 
 class PaginatedResponse(BaseModel):
-    items: List[Any]  # 使用 Any 以支持不同类型的项目，这里为 Recipe
+    items: List[Any]
     links: Dict[str, Any]

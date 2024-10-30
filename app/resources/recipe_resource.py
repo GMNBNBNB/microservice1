@@ -1,5 +1,4 @@
-from typing import Any
-from typing import List
+from typing import Any, List
 from framework.resources.base_resource import BaseResource
 
 from app.models.recipe import Recipe
@@ -11,30 +10,44 @@ class RecipeResource(BaseResource):
     def __init__(self, config):
         super().__init__(config)
 
-        # TODO -- Replace with dependency injection.
-        #
         self.data_service = ServiceFactory.get_service("RecipeResourceDataService")
         self.database = "recipes_database"
         self.recipes = "recipes"
-        self.key_field="name"
+        ##self.key_field = "recipe_id"
 
     def get_total_count(self) -> int:
         return self.data_service.get_total_count(self.database, self.recipes)
 
+
     def create_by_key(self, data: dict) -> Recipe:
         d_service = self.data_service
-        d_service.insert_data(
+        result = d_service.insert_data(
             self.database, self.recipes, data
         )
-        return Recipe(**data)
+        return Recipe(**result)
 
-    def get_by_key(self, key: str) -> Recipe:
+    def get_by_key(self, key_value: Any, key_field: str) -> Recipe:
         d_service = self.data_service
         result = d_service.get_data_object(
-            self.database, self.recipes, key_field=self.key_field, key_value=key
+            self.database, self.recipes, key_field=key_field, key_value=key_value
         )
-        result = Recipe(**result)
-        return result
+        if result:
+            return Recipe(**result)
+        else:
+            return None
+
+    def update_by_key(self, key_value: Any, key_field: str, data: dict) -> Recipe:
+        d_service = self.data_service
+        d_service.update_data(
+            self.database, self.recipes, data, key_field=key_field, key_value=key_value
+        )
+        return self.get_by_key(key_value, key_field)
+
+    def delete_by_key(self, key_value: Any, key_field: str) -> None:
+        d_service = self.data_service
+        d_service.delete_data(
+            self.database, self.recipes, key_field=key_field, key_value=key_value
+        )
 
     def get_all(self, skip: int = 0, limit: int = 10) -> List[Recipe]:
         """
@@ -47,18 +60,3 @@ class RecipeResource(BaseResource):
             self.database, self.recipes, skip=skip, limit=limit
         )
         return [Recipe(**item) for item in results]
-
-    def update_by_key(self, key: str, data: dict) -> Recipe:
-        d_service = self.data_service
-        d_service.update_data(
-            self.database, self.recipes, data, key_field=self.key_field, key_value=key
-        )
-        return self.get_by_key(key)
-
-    def delete_by_key(self, key: str) -> None:
-        d_service = self.data_service
-        d_service.delete_data(
-            self.database, self.recipes, key_field=self.key_field, key_value=key
-        )
-
-
