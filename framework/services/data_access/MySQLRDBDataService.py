@@ -180,34 +180,28 @@ class MySQLRDBDataService(DataDataService):
             connection = self._get_connection()
             cursor = connection.cursor()
 
-            # 开始事务
             connection.begin()
 
-            # 提取食材数据（如果存在），并移除无法序列化的字段
             ingredients = data.pop('ingredients', None)
             data.pop('_links', None)
-            data.pop('recipe_id', None)  # 如果不允许更新 recipe_id，可以移除
+            data.pop('recipe_id', None)
 
-            # **新增：移除 data 中值为字典或列表的字段**
             for key in list(data.keys()):
                 if isinstance(data[key], (dict, list)):
                     print(f"Removing field '{key}' with non-serializable value: {data[key]}")
                     data.pop(key)
 
-            # 更新主表（recipes）
             if data:
                 set_clause = ", ".join([f"`{field}`=%s" for field in data.keys()])
                 sql_statement = f"UPDATE `{database_name}`.`{collection_name}` SET {set_clause} WHERE `{key_field}`=%s"
                 values = list(data.values()) + [key_value]
 
-                # **新增：打印 values**
                 print("Data before SQL execution:", data)
                 print("Values before SQL execution:", values)
 
                 cursor.execute(sql_statement, values)
                 print(f"Updated recipes table for {key_field}={key_value}")
 
-            # 获取 recipe_id
             select_sql = f"SELECT recipe_id FROM `{database_name}`.`{collection_name}` WHERE `{key_field}`=%s"
             cursor.execute(select_sql, [key_value])
             result = cursor.fetchone()
@@ -215,14 +209,11 @@ class MySQLRDBDataService(DataDataService):
                 raise Exception(f"Recipe with {key_field}={key_value} not found")
             recipe_id = result['recipe_id']
 
-            # 更新相关表（ingredients）
             if ingredients is not None:
-                # 删除现有的食材记录
                 delete_sql = f"DELETE FROM `{database_name}`.`ingredients` WHERE `recipe_id`=%s"
                 cursor.execute(delete_sql, [recipe_id])
                 print(f"Deleted existing ingredients for recipe_id={recipe_id}")
 
-                # 插入新的食材记录
                 insert_sql = (
                     f"INSERT INTO `{database_name}`.`ingredients` (`recipe_id`, `ingredient_name`, `quantity`) "
                     f"VALUES (%s, %s, %s)"
@@ -234,7 +225,6 @@ class MySQLRDBDataService(DataDataService):
                 cursor.executemany(insert_sql, ingredient_values)
                 print(f"Inserted {len(ingredients)} new ingredients for recipe_id={recipe_id}")
 
-            # 提交事务
             connection.commit()
             print("Transaction committed successfully.")
 
@@ -249,5 +239,148 @@ class MySQLRDBDataService(DataDataService):
             if connection:
                 connection.close()
                 print("Database connection closed.")
+
+    def delete_data(self,
+                    database_name: str,
+                    collection_name: str,
+                    key_field: str,
+                    key_value: any):
+        """
+        Delete a data object from the specified database and collection/table,
+        including related ingredients and nutrition information.
+        """
+
+        connection = None
+
+        try:
+            connection = self._get_connection()
+            cursor = connection.cursor()
+
+            # Start transaction
+            connection.begin()
+
+            # Get recipe_id if key_field is not 'recipe_id'
+            if key_field != 'recipe_id':
+                select_sql = f"SELECT recipe_id FROM `{database_name}`.`{collection_name}` WHERE `{key_field}`=%s"
+                cursor.execute(select_sql, [key_value])
+                result = cursor.fetchone()
+                if not result:
+                    raise Exception(f"Recipe with {key_field}={key_value} not found")
+                recipe_id = result['recipe_id']
+            else:
+                recipe_id = key_value
+
+            # Delete related records from 'nutrition' table
+            delete_nutrition_sql = f"DELETE FROM `nutrition_db`.`nutrition` WHERE `recipe_id`=%s"
+            cursor.execute(delete_nutrition_sql, [recipe_id])
+            print(f"Deleted nutrition information for recipe_id={recipe_id}")
+
+            # Delete related records from 'ingredients' table
+            delete_ingredients_sql = f"DELETE FROM `{database_name}`.`ingredients` WHERE `recipe_id`=%s"
+            cursor.execute(delete_ingredients_sql, [recipe_id])
+            print(f"Deleted ingredients for recipe_id={recipe_id}")
+
+            # Delete recipe from 'recipes' table
+            delete_recipe_sql = f"DELETE FROM `{database_name}`.`{collection_name}` WHERE `recipe_id`=%s"
+            cursor.execute(delete_recipe_sql, [recipe_id])
+            print(f"Deleted recipe with recipe_id={recipe_id}")
+
+            # Commit transaction
+            connection.commit()
+            print("Transaction committed successfully.")
+
+        except Exception as e:
+            print(f"Error in delete_data: {e}")
+            if connection:
+                connection.rollback()
+                print("Transaction rolled back due to error.")
+            raise e
+        finally:
+            if connection:
+                connection.close()
+                print("Database connection closed.")
+
+    def insert_data(self, database_name: str, collection_name: str, data: dict):
+        """
+        Insert a new recipe into the database, including its ingredients.
+
+        :param database_name: Name of the database.
+        :param collection_name: Name of the recipes table.
+        :param data: Dictionary containing recipe data, including 'ingredients'.
+        :return: The inserted recipe data, including the generated 'recipe_id'.
+        """
+        connection = None
+
+        try:
+            connection = self._get_connection()
+            cursor = connection.cursor()
+
+            # 开始事务
+            connection.begin()
+
+            # 移除 '_links' 和 'recipe_id' 字段（如果存在）
+            data.pop('_links', None)
+            data.pop('recipe_id', None)  # recipe_id 由数据库自动生成，不需要在插入时提供
+
+            # 提取食材数据，并从 data 中移除
+            ingredients = data.pop('ingredients', [])
+
+            # 移除无法序列化的字段
+            for key in list(data.keys()):
+                if isinstance(data[key], (dict, list)):
+                    print(f"Removing field '{key}' with non-serializable value: {data[key]}")
+                    data.pop(key)
+
+            # 1. 插入到 recipes 表
+            recipe_fields = list(data.keys())
+            recipe_values = list(data.values())
+
+            fields = ', '.join([f"`{field}`" for field in recipe_fields])
+            placeholders = ', '.join(['%s'] * len(recipe_fields))
+            insert_recipe_sql = f"INSERT INTO `{database_name}`.`{collection_name}` ({fields}) VALUES ({placeholders})"
+
+            cursor.execute(insert_recipe_sql, recipe_values)
+            recipe_id = cursor.lastrowid
+            print(f"Inserted recipe '{data.get('name')}' with ID {recipe_id} into '{collection_name}' table.")
+
+            # 2. 插入到 ingredients 表，使用生成的 recipe_id
+            if ingredients:
+                insert_ingredient_sql = (
+                    f"INSERT INTO `{database_name}`.`ingredients` (`recipe_id`, `ingredient_name`, `quantity`) "
+                    f"VALUES (%s, %s, %s)"
+                )
+                ingredient_values = [
+                    (recipe_id, ingredient['ingredient_name'], ingredient['quantity'])
+                    for ingredient in ingredients
+                ]
+                cursor.executemany(insert_ingredient_sql, ingredient_values)
+                print(f"Inserted {len(ingredients)} ingredients for recipe '{data.get('name')}'.")
+
+            # 提交事务
+            connection.commit()
+            print("Transaction committed successfully.")
+
+            # 返回新插入的食谱数据，包括生成的 recipe_id 和 ingredients
+            data['recipe_id'] = recipe_id
+            data['ingredients'] = ingredients
+            return data
+
+        except pymysql.err.IntegrityError as e:
+            print(f"Integrity error in insert_data: {e}")
+            if connection:
+                connection.rollback()
+                print("Transaction rolled back due to integrity error.")
+            raise e
+        except Exception as e:
+            print(f"Error in insert_data: {e}")
+            if connection:
+                connection.rollback()
+                print("Transaction rolled back due to error.")
+            raise e
+        finally:
+            if connection:
+                connection.close()
+                print("Database connection closed.")
+
 
 
