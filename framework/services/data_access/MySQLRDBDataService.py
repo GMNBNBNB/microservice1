@@ -315,23 +315,19 @@ class MySQLRDBDataService(DataDataService):
             connection = self._get_connection()
             cursor = connection.cursor()
 
-            # 开始事务
             connection.begin()
 
-            # 移除 '_links' 和 'recipe_id' 字段（如果存在）
             data.pop('_links', None)
-            data.pop('recipe_id', None)  # recipe_id 由数据库自动生成，不需要在插入时提供
-
-            # 提取食材数据，并从 data 中移除
+            data.pop('recipe_id', None)
             ingredients = data.pop('ingredients', [])
 
-            # 移除无法序列化的字段
+
             for key in list(data.keys()):
                 if isinstance(data[key], (dict, list)):
                     print(f"Removing field '{key}' with non-serializable value: {data[key]}")
                     data.pop(key)
 
-            # 1. 插入到 recipes 表
+
             recipe_fields = list(data.keys())
             recipe_values = list(data.values())
 
@@ -343,7 +339,7 @@ class MySQLRDBDataService(DataDataService):
             recipe_id = cursor.lastrowid
             print(f"Inserted recipe '{data.get('name')}' with ID {recipe_id} into '{collection_name}' table.")
 
-            # 2. 插入到 ingredients 表，使用生成的 recipe_id
+
             if ingredients:
                 insert_ingredient_sql = (
                     f"INSERT INTO `{database_name}`.`ingredients` (`recipe_id`, `ingredient_name`, `quantity`) "
@@ -356,11 +352,11 @@ class MySQLRDBDataService(DataDataService):
                 cursor.executemany(insert_ingredient_sql, ingredient_values)
                 print(f"Inserted {len(ingredients)} ingredients for recipe '{data.get('name')}'.")
 
-            # 提交事务
+
             connection.commit()
             print("Transaction committed successfully.")
 
-            # 返回新插入的食谱数据，包括生成的 recipe_id 和 ingredients
+
             data['recipe_id'] = recipe_id
             data['ingredients'] = ingredients
             return data
