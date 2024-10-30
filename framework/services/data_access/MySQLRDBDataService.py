@@ -317,7 +317,7 @@ class MySQLRDBDataService(DataDataService):
 
             connection.begin()
 
-            data.pop('_links', None)
+            data.pop('links', None)
             data.pop('recipe_id', None)
             ingredients = data.pop('ingredients', [])
 
