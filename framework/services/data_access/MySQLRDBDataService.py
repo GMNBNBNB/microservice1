@@ -183,7 +183,7 @@ class MySQLRDBDataService(DataDataService):
             connection.begin()
 
             ingredients = data.pop('ingredients', None)
-            data.pop('_links', None)
+            data.pop('links', None)
             data.pop('recipe_id', None)
 
             for key in list(data.keys()):
