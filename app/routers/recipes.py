@@ -10,6 +10,10 @@ router = APIRouter()
 
 @router.post("/recipes", tags=["recipes"], status_code=201, response_model=Recipe)
 async def create_recipe(recipe: Recipe) -> Recipe:
+    """
+    Create a new recipe.
+    - **recipe**: Recipe object to be created.
+    """
     res = ServiceFactory.get_service("RecipeResource")
     try:
         new_recipe = res.create_by_key(recipe.dict())
@@ -28,6 +32,10 @@ async def create_recipe(recipe: Recipe) -> Recipe:
 
 @router.get("/recipes/name/{name}", tags=["recipes"], response_model=Recipe)
 async def get_recipe_by_name(name: str) -> Recipe:
+    """
+    Retrieve a recipe by its name.
+    - **name**: The name of the recipe.
+    """
     res = ServiceFactory.get_service("RecipeResource")
     result = res.get_by_key(key_value=name, key_field="name")
 
@@ -45,6 +53,10 @@ async def get_recipe_by_name(name: str) -> Recipe:
 
 @router.get("/recipes/id/{recipe_id}", tags=["recipes"], response_model=Recipe)
 async def get_recipe_by_id(recipe_id: int) -> Recipe:
+    """
+    Retrieve a recipe by its ID.
+    - **recipe_id**: The ID of the recipe.
+    """
     res = ServiceFactory.get_service("RecipeResource")
     result = res.get_by_key(key_value=recipe_id, key_field="recipe_id")
 
@@ -62,6 +74,11 @@ async def get_recipe_by_id(recipe_id: int) -> Recipe:
 
 @router.put("/recipes/id/{recipe_id}", tags=["recipes"], response_model=Recipe)
 async def update_recipe_by_id(recipe_id: int, recipe: Recipe) -> Recipe:
+    """
+    Update a recipe by its ID.
+    - **recipe_id**: The ID of the recipe to update.
+    - **recipe**: Recipe object containing the updated data.
+    """
     res = ServiceFactory.get_service("RecipeResource")
     update_data = recipe.dict(exclude_unset=True)
     result = res.update_by_key(key_value=recipe_id, key_field="recipe_id", data=update_data)
@@ -69,6 +86,11 @@ async def update_recipe_by_id(recipe_id: int, recipe: Recipe) -> Recipe:
 
 @router.put("/recipes/name/{name}", tags=["recipes"], response_model=Recipe)
 async def update_recipe_by_name(name: str, recipe: Recipe) -> Recipe:
+    """
+    Update a recipe by its name.
+    - **name**: The name of the recipe to update.
+    - **recipe**: Recipe object containing the updated data.
+    """
     res = ServiceFactory.get_service("RecipeResource")
     update_data = recipe.dict(exclude_unset=True)
     result = res.update_by_key(key_value=name, key_field="name", data=update_data)
@@ -76,12 +98,20 @@ async def update_recipe_by_name(name: str, recipe: Recipe) -> Recipe:
 
 @router.delete("/recipes/id/{recipe_id}", tags=["recipes"])
 async def delete_recipe_by_id(recipe_id: int):
+    """
+    Delete a recipe by its ID.
+    - **recipe_id**: The ID of the recipe to delete.
+    """
     res = ServiceFactory.get_service("RecipeResource")
     res.delete_by_key(key_value=recipe_id, key_field="recipe_id")
     return {"message": f"Recipe with id {recipe_id} has been deleted"}
 
 @router.delete("/recipes/name/{name}", tags=["recipes"])
 async def delete_recipe_by_name(name: str):
+    """
+    Delete a recipe by its name.
+    - **name**: The name of the recipe to delete.
+    """
     res = ServiceFactory.get_service("RecipeResource")
     res.delete_by_key(key_value=name, key_field="name")
     return {"message": f"Recipe with name {name} has been deleted"}
@@ -95,6 +125,8 @@ async def get_all_recipes(
 ) -> PaginatedResponse:
     """
     Retrieve all recipes with pagination.
+    - **skip**: The number of records to skip.
+    - **limit**: The maximum number of records to retrieve.
     """
     res: RecipeResource = ServiceFactory.get_service("RecipeResource")
     recipes = res.get_all(skip=skip, limit=limit)
