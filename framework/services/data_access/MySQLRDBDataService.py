@@ -51,7 +51,6 @@ class MySQLRDBDataService(DataDataService):
         result = None
 
         try:
-            # 调整 SQL 语句，使用参数化查询
             sql_statement = f"""SELECT r.recipe_id, r.name, r.steps, r.time_to_cook, r.meal_type, r.calories, r.rating,
                                 i.ingredient_name, i.quantity
                                 FROM `{database_name}`.`{collection_name}` r

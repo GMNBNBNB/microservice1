@@ -3,6 +3,7 @@ import uvicorn
 import logging
 import time
 from fastapi.middleware.cors import CORSMiddleware
+import json
 
 from app.routers import recipes
 
@@ -43,6 +44,9 @@ app.include_router(recipes.router)
 @app.get("/")
 async def root():
     return {"message": "Hello recipes search Applications!"}
+
+with open("openapi.json", "w") as f:
+    json.dump(app.openapi(), f)
 
 
 if __name__ == "__main__":
