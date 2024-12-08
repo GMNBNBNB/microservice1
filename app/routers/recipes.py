@@ -1,5 +1,5 @@
+# app/routers/recipes.py
 from fastapi import APIRouter, HTTPException, Query, Request
-
 from app.models.recipe import Recipe, PaginatedResponse
 from app.resources.recipe_resource import RecipeResource
 from app.services.service_factory import ServiceFactory
@@ -7,9 +7,8 @@ from typing import List, Optional
 
 router = APIRouter()
 
-
 @router.post("/recipes", tags=["recipes"], status_code=201, response_model=Recipe)
-async def create_recipe(recipe: Recipe) -> Recipe:
+async def create_recipe(recipe: Recipe, request: Request) -> Recipe:
     """
     Create a new recipe.
     - **recipe**: Recipe object to be created.
@@ -21,9 +20,9 @@ async def create_recipe(recipe: Recipe) -> Recipe:
         recipe_id = recipe_data.get('recipe_id')
 
         recipe_data["links"] = {
-            "self": {"href": f"/recipes/{recipe_id}"},
-            "update": {"href": f"/recipes/{recipe_id}", "method": "PUT"},
-            "delete": {"href": f"/recipes/{recipe_id}", "method": "DELETE"}
+            "self": {"href": f"/recipes/id/{recipe_id}"},
+            "update": {"href": f"/recipes/id/{recipe_id}", "method": "PUT"},
+            "delete": {"href": f"/recipes/id/{recipe_id}", "method": "DELETE"}
         }
 
         return Recipe(**recipe_data)
@@ -31,7 +30,7 @@ async def create_recipe(recipe: Recipe) -> Recipe:
         raise HTTPException(status_code=500, detail=f"Failed to create recipe: {e}")
 
 @router.get("/recipes/name/{name}", tags=["recipes"], response_model=Recipe)
-async def get_recipe_by_name(name: str) -> Recipe:
+async def get_recipe_by_name(name: str, request: Request) -> Recipe:
     """
     Retrieve a recipe by its name.
     - **name**: The name of the recipe.
@@ -52,7 +51,7 @@ async def get_recipe_by_name(name: str) -> Recipe:
     return Recipe(**recipe_data)
 
 @router.get("/recipes/id/{recipe_id}", tags=["recipes"], response_model=Recipe)
-async def get_recipe_by_id(recipe_id: int) -> Recipe:
+async def get_recipe_by_id(recipe_id: int, request: Request) -> Recipe:
     """
     Retrieve a recipe by its ID.
     - **recipe_id**: The ID of the recipe.
@@ -69,11 +68,10 @@ async def get_recipe_by_id(recipe_id: int) -> Recipe:
         "update": {"href": f"/recipes/id/{recipe_id}", "method": "PUT"},
         "delete": {"href": f"/recipes/id/{recipe_id}", "method": "DELETE"}
     }
-
     return Recipe(**recipe_data)
 
 @router.put("/recipes/id/{recipe_id}", tags=["recipes"], response_model=Recipe)
-async def update_recipe_by_id(recipe_id: int, recipe: Recipe) -> Recipe:
+async def update_recipe_by_id(recipe_id: int, recipe: Recipe, request: Request) -> Recipe:
     """
     Update a recipe by its ID.
     - **recipe_id**: The ID of the recipe to update.
@@ -82,10 +80,11 @@ async def update_recipe_by_id(recipe_id: int, recipe: Recipe) -> Recipe:
     res = ServiceFactory.get_service("RecipeResource")
     update_data = recipe.dict(exclude_unset=True)
     result = res.update_by_key(key_value=recipe_id, key_field="recipe_id", data=update_data)
-    return result
+    result_data = result.dict()
+    return Recipe(**result_data)
 
 @router.put("/recipes/name/{name}", tags=["recipes"], response_model=Recipe)
-async def update_recipe_by_name(name: str, recipe: Recipe) -> Recipe:
+async def update_recipe_by_name(name: str, recipe: Recipe, request: Request) -> Recipe:
     """
     Update a recipe by its name.
     - **name**: The name of the recipe to update.
@@ -94,10 +93,11 @@ async def update_recipe_by_name(name: str, recipe: Recipe) -> Recipe:
     res = ServiceFactory.get_service("RecipeResource")
     update_data = recipe.dict(exclude_unset=True)
     result = res.update_by_key(key_value=name, key_field="name", data=update_data)
-    return result
+    result_data = result.dict()
+    return Recipe(**result_data)
 
 @router.delete("/recipes/id/{recipe_id}", tags=["recipes"])
-async def delete_recipe_by_id(recipe_id: int):
+async def delete_recipe_by_id(recipe_id: int, request: Request):
     """
     Delete a recipe by its ID.
     - **recipe_id**: The ID of the recipe to delete.
@@ -107,7 +107,7 @@ async def delete_recipe_by_id(recipe_id: int):
     return {"message": f"Recipe with id {recipe_id} has been deleted"}
 
 @router.delete("/recipes/name/{name}", tags=["recipes"])
-async def delete_recipe_by_name(name: str):
+async def delete_recipe_by_name(name: str, request: Request):
     """
     Delete a recipe by its name.
     - **name**: The name of the recipe to delete.
@@ -115,7 +115,6 @@ async def delete_recipe_by_name(name: str):
     res = ServiceFactory.get_service("RecipeResource")
     res.delete_by_key(key_value=name, key_field="name")
     return {"message": f"Recipe with name {name} has been deleted"}
-
 
 @router.get("/recipes", tags=["recipes"], response_model=PaginatedResponse)
 async def get_all_recipes(
@@ -157,9 +156,9 @@ async def get_all_recipes(
         recipe_data = recipe.dict()
         recipe_id = recipe_data['recipe_id']
         recipe_data["links"] = {
-            "self": {"href": f"/recipes/{recipe_id}"},
-            "update": {"href": f"/recipes/{recipe_id}", "method": "PUT"},
-            "delete": {"href": f"/recipes/{recipe_id}", "method": "DELETE"}
+            "self": {"href": f"/recipes/id/{recipe_id}"},
+            "update": {"href": f"/recipes/id/{recipe_id}", "method": "PUT"},
+            "delete": {"href": f"/recipes/id/{recipe_id}", "method": "DELETE"}
         }
         updated_recipes.append(Recipe(**recipe_data))
 
