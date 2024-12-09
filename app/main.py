@@ -3,12 +3,13 @@ from fastapi import Depends, FastAPI, Request
 import uvicorn
 import logging
 import json
+import os
 
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import recipes
-from correlation_id_middleware import CorrelationIdMiddleware
-from log_requests_middleware import LogRequestsMiddleware
+from app.correlation_id_middleware import CorrelationIdMiddleware
+from app.log_requests_middleware import LogRequestsMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,4 +43,5 @@ async def root(request: Request):
 #     json.dump(app.openapi(), f)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
