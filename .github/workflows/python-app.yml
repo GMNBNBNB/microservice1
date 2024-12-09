@@ -44,3 +44,4 @@ jobs:
 
     - name: Deploy to Google App Engine
       run: gcloud app deploy --quiet
+
