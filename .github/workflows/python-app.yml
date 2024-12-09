@@ -34,7 +34,9 @@ jobs:
         export_default_credentials: true
         
     - name: Verify Authentication
-      run: gcloud auth list
+      run: |
+        gcloud auth list
+        gcloud config list account
         
     - name: Deploy to Google App Engine
       run: gcloud app deploy --quiet
