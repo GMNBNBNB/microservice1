@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# 添加 CORS 中间件
+# add middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
