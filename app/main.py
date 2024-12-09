@@ -35,7 +35,7 @@ app.include_router(recipes.router)
 @app.get("/")
 async def root(request: Request):
     correlation_id = getattr(request.state, 'correlation_id', 'N/A')
-    return {"message": "Hello recipes search Applications!", "correlationId": correlation_id}
+    return {"message": "Welcome to the recipe search application!", "correlationId": correlation_id}
 
 
 # output openAPI file
