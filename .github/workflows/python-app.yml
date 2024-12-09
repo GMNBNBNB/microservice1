@@ -61,20 +61,7 @@ jobs:
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
-        credentials_json: |
-          {
-            "type": "service_account",
-            "project_id": "sunny-truth-444203-c0",
-            "private_key_id": "4edfbf2dee53a53b82d8054f869fe720a3265e9c",
-            "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDZtC/w7dy1q+dX\nWghrQFyA/Zfq3HtcogZ36+gUBzvUBSvs+7Xev3LsITg/19K+XkHpKcxjrKYt1LjR\ndOc5vahk0fsxCs0wN6mUzxIk/bdAzTGZJarETisIEYyBtwvl/NEgV7v97pMRRkx6\nEIBoA/DzYkby1j8g91dhgDMruyE39XN8kjsgfgnGv6DcoQYvVIPY9egbqDiQ89kx\nk6XLebr/hIc1qXD6zvAPQLHwe9MLEz+qrfHHJmMk27XaNYQD4nEImH1tHsU9xUgK\nLTL+KFK1aywpgADQPtz18sjEdc8cfjrXIdXYf9upMgqOZTLzPWjpyGx5aR5Foo8D\ne5TdLafJAgMBAAECggEAW4e4iFFZdEBcOYuu8njS66CzWJlufFna4lya7KDF9LRf\n7Xk+0/ImPUUSQzVYc5VpnMBoIJgcHjTLp7TA6rPkss7eD5Z9AoLEl74f4NGTVHlx\nGvSNQY+j4/aM3pS5Oe77dd+tOGwwBRlLWh7J/fF6QrnVHpAZZqDXajTeTsqUgtO2\n9zHm9ddBOG2nAX2gKf6VyIcVlvoutvYEMN2+9vp7aX7b54H8lh0PNcTo9JyATcG7\nY8fCABwtdjAonCVgmD4YrbMfYQVkWXt08YLwWGjPa43sxZnHPgizEkQgrJIl2VPQ\nn3lTPPrbXUAcEr6jbLi3gx3IJYpkEo3gW5ZGseCOCQKBgQD5K2qPmAw8ISTYFVxe\nP9v2sesKx3renUijk7ob1LoLdpq/Ix7OqLtnffgOhVxPwhwoZgXwWpACqTokqVf4\ng7XPJ51zrP/VFQT0PMOqce321xQgaoAfRnrePZHMKQ1PpHzrIvshntFGtuknHs9q\nNJCagsm5+KcZsVDiJgDFRDJ3SwKBgQDfq/SkrcEsqHVF6lz2zLdXStwhaVzGVAbT\nN+SA8ew0K9D/xuV/Z5jhygM13X+b3b+dJ2EjE6wfFy6YRIZj0E+Or5Lgrv/8o1Fk\nA+UVm4KM4jYKsPvcCipoMxTLBk0RQ/+CZrQC3DcUanUZvgMGPNMoHcVhLVu17s/3\ncEAqG4sMuwKBgQCtYJp7ZE9PH7jlaqelJUZHeDGWhItoj4TV3ZsodnMmOtcenK95\nGUudjbenUwCStvyk16jWQA3o7Bv7GqKN2AgQJv6WWRCDEmcqE4YK+c+dbLcifzi7\nim1AaxMiPoZ2nnwVmXepQztXuzqs7/Ffc0gTW2JGt1B+vjULx2nN2dBL1QKBgFMR\nFnsuOGawbVU406uonZJir9wMuDLDtAEvacJlljZN64GCSWsGe2WnU4fmqeSl9uqT\nXGTdgnfNcTWFhW9+Rn2UQPUGqPUXZjvBootixJozzKQt1GuErvkht2ArB+YYncS9\nBa9mP2JqovCbe54OatEkNVCAuuWXOk8HthytO/fPAoGBALaFN6XSc9L3v2G44cCh\nndxlZRQpuBjzmEL/uG67uuYHjn5eEiANSd1bOyy6BbrumWRGyvJvlH/9RlofFTfR\nL3sWYOlrB/5eMv3Wif20MXkQw3FdxsutyeS34MNAu5p5eYH4U5hMc/hVQ/nKdcU4\nsf/Lfh2i791CC2f87ZOuQ3+E\n-----END PRIVATE KEY-----\n",
-            "client_email": "sunny-truth-444203-c0@appspot.gserviceaccount.com",
-            "client_id": "102008308362814879357",
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-            "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/sunny-truth-444203-c0%40appspot.gserviceaccount.com",
-            "universe_domain": "googleapis.com"
-          }
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
 
     - name: Set Up Google Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
