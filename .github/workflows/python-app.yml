@@ -31,6 +31,9 @@ jobs:
             "universe_domain": "googleapis.com"
           }
         project_id: sunny-truth-444203-c0
-      
+        
+    - name: Verify Authentication
+      run: gcloud auth list
+        
     - name: Deploy to Google App Engine
       run: gcloud app deploy --quiet
