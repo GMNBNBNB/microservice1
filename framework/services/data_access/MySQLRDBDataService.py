@@ -270,9 +270,9 @@ class MySQLRDBDataService(DataDataService):
                 recipe_id = key_value
 
             # Delete related records from 'nutrition' table
-            delete_nutrition_sql = f"DELETE FROM `nutrition_db`.`nutrition` WHERE `recipe_id`=%s"
-            cursor.execute(delete_nutrition_sql, [recipe_id])
-            print(f"Deleted nutrition information for recipe_id={recipe_id}")
+            # delete_nutrition_sql = f"DELETE FROM `nutrition_db`.`nutrition` WHERE `recipe_id`=%s"
+            # cursor.execute(delete_nutrition_sql, [recipe_id])
+            # print(f"Deleted nutrition information for recipe_id={recipe_id}")
 
             # Delete related records from 'ingredients' table
             delete_ingredients_sql = f"DELETE FROM `{database_name}`.`ingredients` WHERE `recipe_id`=%s"
