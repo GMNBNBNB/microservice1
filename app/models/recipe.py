@@ -4,6 +4,7 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
 class Ingredient(BaseModel):
+    ingredient_id: int
     ingredient_name: str
     quantity: str
 
@@ -25,22 +26,27 @@ class Recipe(BaseModel):
                 "name": "Avocado Toast",
                 "ingredients": [
                     {
+                        "ingredient_id": 148,
                         "ingredient_name": "Avocado",
                         "quantity": "1 large"
                     },
                     {
+                        "ingredient_id": 149,
                         "ingredient_name": "Bread",
                         "quantity": "2 slices"
                     },
                     {
+                        "ingredient_id": 150,
                         "ingredient_name": "Lime",
                         "quantity": "1/2"
                     },
                     {
+                        "ingredient_id": 151,
                         "ingredient_name": "Olive oil",
                         "quantity": "1 tbsp"
                     },
                     {
+                        "ingredient_id": 152,
                         "ingredient_name": "Salt",
                         "quantity": "1/4 tsp"
                     }
