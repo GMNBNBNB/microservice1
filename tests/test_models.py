@@ -6,6 +6,7 @@ from app.models.recipe import Ingredient, Recipe, PaginatedResponse
 
 # Sample data for testing
 valid_ingredient_data = {
+    "ingredient_id": 1,
     "ingredient_name": "Avocado",
     "quantity": "1 large"
 }
@@ -15,22 +16,27 @@ valid_recipe_data = {
     "name": "Avocado Toast",
     "ingredients": [
         {
+            "ingredient_id": 1,
             "ingredient_name": "Avocado",
             "quantity": "1 large"
         },
         {
+            "ingredient_id": 2,
             "ingredient_name": "Bread",
             "quantity": "2 slices"
         },
         {
+            "ingredient_id": 3,
             "ingredient_name": "Lime",
             "quantity": "1/2"
         },
         {
+            "ingredient_id": 4,
             "ingredient_name": "Olive oil",
             "quantity": "1 tbsp"
         },
         {
+            "ingredient_id": 5,
             "ingredient_name": "Salt",
             "quantity": "1/4 tsp"
         }
@@ -59,6 +65,7 @@ invalid_recipe_data_missing_name = {
     "recipe_id": 172,
     "ingredients": [
         {
+            "ingredient_id": 6,
             "ingredient_name": "Tomato",
             "quantity": "2"
         }
@@ -70,6 +77,7 @@ invalid_recipe_data_wrong_type = {
     "name": "Tomato Soup",
     "ingredients": [
         {
+            "ingredient_id": 7,
             "ingredient_name": "Tomato",
             "quantity": "2"
         }
@@ -79,6 +87,7 @@ invalid_recipe_data_wrong_type = {
 
 valid_paginated_response = {
     "items": [valid_recipe_data],
+    "total": 1,
     "links": {
         "self": {"href": "/recipes?page=1"},
         "next": {"href": "/recipes?page=2"},
@@ -95,26 +104,27 @@ invalid_paginated_response_missing_items = {
 
 # Test Ingredient Model
 def test_ingredient_model_valid():
-    ingredient = Ingredient(**valid_ingredient_data)
+    ingredient = Ingredient.model_validate(valid_ingredient_data)
     assert ingredient.ingredient_name == "Avocado"
     assert ingredient.quantity == "1 large"
+    assert ingredient.ingredient_id == 1
 
 
 def test_ingredient_model_invalid_missing_field():
     with pytest.raises(ValidationError) as exc_info:
-        Ingredient(quantity="1 large")  # Missing 'ingredient_name'
+        Ingredient.model_validate({"quantity": "1 large", "ingredient_id": 8})
     assert "ingredient_name" in str(exc_info.value)
 
 
 def test_ingredient_model_invalid_type():
     with pytest.raises(ValidationError) as exc_info:
-        Ingredient(ingredient_name=123, quantity="1 large")  # 'ingredient_name' should be a string
+        Ingredient.model_validate({"ingredient_name": 123, "quantity": "1 large", "ingredient_id": 9})
     assert "ingredient_name" in str(exc_info.value)
 
 
 # Test Recipe Model
 def test_recipe_model_valid():
-    recipe = Recipe(**valid_recipe_data)
+    recipe = Recipe.model_validate(valid_recipe_data)
     assert recipe.recipe_id == 171
     assert recipe.name == "Avocado Toast"
     assert len(recipe.ingredients) == 5
@@ -123,46 +133,52 @@ def test_recipe_model_valid():
     assert recipe.calories == 300
     assert recipe.rating == 4.4
     assert "self" in recipe.links
+    assert recipe.ingredients[0].ingredient_id == 1
 
 
 def test_recipe_model_optional_fields_missing():
     minimal_recipe_data = {
+        "recipe_id": 173,
         "name": "Simple Salad",
         "ingredients": [
             {
+                "ingredient_id": 10,
                 "ingredient_name": "Lettuce",
                 "quantity": "1 head"
             }
         ]
     }
-    recipe = Recipe(**minimal_recipe_data)
-    assert recipe.recipe_id is None
+    recipe = Recipe.model_validate(minimal_recipe_data)
+    assert recipe.recipe_id == 173
+    assert recipe.name == "Simple Salad"
     assert recipe.steps is None
     assert recipe.time_to_cook is None
     assert recipe.meal_type is None
     assert recipe.calories is None
     assert recipe.rating is None
     assert recipe.links is None
+    assert len(recipe.ingredients) == 1
+    assert recipe.ingredients[0].ingredient_id == 10
 
 
 def test_recipe_model_invalid_missing_required_field():
     with pytest.raises(ValidationError) as exc_info:
-        Recipe(**invalid_recipe_data_missing_name)
+        Recipe.model_validate(invalid_recipe_data_missing_name)
     assert "name" in str(exc_info.value)
 
 
 def test_recipe_model_invalid_field_types():
     with pytest.raises(ValidationError) as exc_info:
-        Recipe(**invalid_recipe_data_wrong_type)
+        Recipe.model_validate(invalid_recipe_data_wrong_type)
     assert "recipe_id" in str(exc_info.value)
     assert "time_to_cook" in str(exc_info.value)
 
 
 def test_recipe_serialization():
-    recipe = Recipe(**valid_recipe_data)
-    json_data = recipe.json()
+    recipe = Recipe.model_validate(valid_recipe_data)
+    json_data = recipe.model_dump_json()
     assert isinstance(json_data, str)
-    parsed = Recipe.parse_raw(json_data)
+    parsed = Recipe.model_validate_json(json_data)
     assert parsed == recipe
 
 
@@ -178,13 +194,13 @@ def test_paginated_response_valid():
 
 def test_paginated_response_invalid_missing_items():
     with pytest.raises(ValidationError) as exc_info:
-        PaginatedResponse(**invalid_paginated_response_missing_items)
+        PaginatedResponse.model_validate(invalid_paginated_response_missing_items)
     assert "items" in str(exc_info.value)
 
 
 def test_paginated_response_serialization():
-    paginated = PaginatedResponse(**valid_paginated_response)
-    json_data = paginated.json()
+    paginated = PaginatedResponse.model_validate(valid_paginated_response)
+    json_data = paginated.model_dump_json()
     assert isinstance(json_data, str)
-    parsed = PaginatedResponse.parse_raw(json_data)
-    assert parsed == paginated
+    parsed_paginated = PaginatedResponse.model_validate_json(json_data)
+    assert parsed_paginated == paginated
