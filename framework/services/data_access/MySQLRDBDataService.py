@@ -52,7 +52,7 @@ class MySQLRDBDataService(DataDataService):
 
         try:
             sql_statement = f"""SELECT r.recipe_id, r.name, r.steps, r.time_to_cook, r.meal_type, r.calories, r.rating,
-                                i.ingredient_name, i.quantity
+                                i.ingredient_id, i.ingredient_name, i.quantity
                                 FROM `{database_name}`.`{collection_name}` r
                                 LEFT JOIN `{database_name}`.`ingredients` i ON r.recipe_id = i.recipe_id
                                 WHERE r.{key_field}=%s"""
@@ -61,6 +61,7 @@ class MySQLRDBDataService(DataDataService):
             cursor = connection.cursor()
             cursor.execute(sql_statement, [key_value])
             rows = cursor.fetchall()
+            print(rows)
 
             if rows:
                 recipe = {
@@ -73,10 +74,12 @@ class MySQLRDBDataService(DataDataService):
                     "rating": rows[0]["rating"],
                     "ingredients": []
                 }
+                
 
                 for row in rows:
                     if row["ingredient_name"] is not None:
                         recipe["ingredients"].append({
+                            "ingredient_id": row["ingredient_id"],
                             "ingredient_name": row["ingredient_name"],
                             "quantity": row["quantity"]
                         })
@@ -123,7 +126,7 @@ class MySQLRDBDataService(DataDataService):
 
             format_strings = ','.join(['%s'] * len(recipe_ids))
             ingredients_sql = (
-                f"SELECT i.recipe_id, i.ingredient_name, i.quantity "
+                f"SELECT i.ingredient_id, i.recipe_id, i.ingredient_name, i.quantity "
                 f"FROM `{database_name}`.ingredients i "
                 f"WHERE i.recipe_id IN ({format_strings})"
             )
@@ -136,6 +139,7 @@ class MySQLRDBDataService(DataDataService):
                 if recipe_id not in ingredients_map:
                     ingredients_map[recipe_id] = []
                 ingredients_map[recipe_id].append({
+                    "ingredient_id": ingredient["ingredient_id"],
                     "ingredient_name": ingredient["ingredient_name"],
                     "quantity": ingredient["quantity"]
                 })
@@ -270,9 +274,9 @@ class MySQLRDBDataService(DataDataService):
                 recipe_id = key_value
 
             # Delete related records from 'nutrition' table
-            delete_nutrition_sql = f"DELETE FROM `nutrition_db`.`nutrition` WHERE `recipe_id`=%s"
-            cursor.execute(delete_nutrition_sql, [recipe_id])
-            print(f"Deleted nutrition information for recipe_id={recipe_id}")
+            # delete_nutrition_sql = f"DELETE FROM `nutrition_db`.`nutrition` WHERE `recipe_id`=%s"
+            # cursor.execute(delete_nutrition_sql, [recipe_id])
+            # print(f"Deleted nutrition information for recipe_id={recipe_id}")
 
             # Delete related records from 'ingredients' table
             delete_ingredients_sql = f"DELETE FROM `{database_name}`.`ingredients` WHERE `recipe_id`=%s"
@@ -299,6 +303,83 @@ class MySQLRDBDataService(DataDataService):
                 connection.close()
                 print("Database connection closed.")
 
+    # def insert_data(self, database_name: str, collection_name: str, data: dict):
+    #     """
+    #     Insert a new recipe into the database, including its ingredients.
+
+    #     :param database_name: Name of the database.
+    #     :param collection_name: Name of the recipes table.
+    #     :param data: Dictionary containing recipe data, including 'ingredients'.
+    #     :return: The inserted recipe data, including the generated 'recipe_id'.
+    #     """
+    #     connection = None
+
+    #     try:
+    #         connection = self._get_connection()
+    #         cursor = connection.cursor()
+
+    #         connection.begin()
+
+    #         data.pop('links', None)
+    #         data.pop('recipe_id', None)
+    #         ingredients = data.pop('ingredients', [])
+
+
+    #         for key in list(data.keys()):
+    #             if isinstance(data[key], (dict, list)):
+    #                 print(f"Removing field '{key}' with non-serializable value: {data[key]}")
+    #                 data.pop(key)
+
+
+    #         recipe_fields = list(data.keys())
+    #         recipe_values = list(data.values())
+
+    #         fields = ', '.join([f"`{field}`" for field in recipe_fields])
+    #         placeholders = ', '.join(['%s'] * len(recipe_fields))
+    #         insert_recipe_sql = f"INSERT INTO `{database_name}`.`{collection_name}` ({fields}) VALUES ({placeholders})"
+
+    #         cursor.execute(insert_recipe_sql, recipe_values)
+    #         recipe_id = cursor.lastrowid
+    #         print(f"Inserted recipe '{data.get('name')}' with ID {recipe_id} into '{collection_name}' table.")
+
+
+    #         if ingredients:
+    #             insert_ingredient_sql = (
+    #                 f"INSERT INTO `{database_name}`.`ingredients` (`recipe_id`, `ingredient_name`, `quantity`) "
+    #                 f"VALUES (%s, %s, %s)"
+    #             )
+    #             ingredient_values = [
+    #                 (recipe_id, ingredient['ingredient_name'], ingredient['quantity'])
+    #                 for ingredient in ingredients
+    #             ]
+    #             cursor.executemany(insert_ingredient_sql, ingredient_values)
+    #             print(f"Inserted {len(ingredients)} ingredients for recipe '{data.get('name')}'.")
+
+
+    #         connection.commit()
+    #         print("Transaction committed successfully.")
+
+
+    #         data['recipe_id'] = recipe_id
+    #         data['ingredients'] = ingredients
+    #         return data
+
+    #     except pymysql.err.IntegrityError as e:
+    #         print(f"Integrity error in insert_data: {e}")
+    #         if connection:
+    #             connection.rollback()
+    #             print("Transaction rolled back due to integrity error.")
+    #         raise e
+    #     except Exception as e:
+    #         print(f"Error in insert_data: {e}")
+    #         if connection:
+    #             connection.rollback()
+    #             print("Transaction rolled back due to error.")
+    #         raise e
+    #     finally:
+    #         if connection:
+    #             connection.close()
+    #             print("Database connection closed.")
     def insert_data(self, database_name: str, collection_name: str, data: dict):
         """
         Insert a new recipe into the database, including its ingredients.
@@ -306,7 +387,7 @@ class MySQLRDBDataService(DataDataService):
         :param database_name: Name of the database.
         :param collection_name: Name of the recipes table.
         :param data: Dictionary containing recipe data, including 'ingredients'.
-        :return: The inserted recipe data, including the generated 'recipe_id'.
+        :return: The inserted recipe data, including the generated 'recipe_id' and 'ingredient_id' for each ingredient.
         """
         connection = None
 
@@ -316,20 +397,20 @@ class MySQLRDBDataService(DataDataService):
 
             connection.begin()
 
+            # Remove unwanted fields from data
             data.pop('links', None)
             data.pop('recipe_id', None)
             ingredients = data.pop('ingredients', [])
 
-
+            # Remove non-serializable fields
             for key in list(data.keys()):
                 if isinstance(data[key], (dict, list)):
                     print(f"Removing field '{key}' with non-serializable value: {data[key]}")
                     data.pop(key)
 
-
+            # Insert recipe
             recipe_fields = list(data.keys())
             recipe_values = list(data.values())
-
             fields = ', '.join([f"`{field}`" for field in recipe_fields])
             placeholders = ', '.join(['%s'] * len(recipe_fields))
             insert_recipe_sql = f"INSERT INTO `{database_name}`.`{collection_name}` ({fields}) VALUES ({placeholders})"
@@ -338,24 +419,24 @@ class MySQLRDBDataService(DataDataService):
             recipe_id = cursor.lastrowid
             print(f"Inserted recipe '{data.get('name')}' with ID {recipe_id} into '{collection_name}' table.")
 
-
+            ingredient_ids = []
             if ingredients:
+                # Insert ingredients and fetch their IDs
                 insert_ingredient_sql = (
                     f"INSERT INTO `{database_name}`.`ingredients` (`recipe_id`, `ingredient_name`, `quantity`) "
                     f"VALUES (%s, %s, %s)"
                 )
-                ingredient_values = [
-                    (recipe_id, ingredient['ingredient_name'], ingredient['quantity'])
-                    for ingredient in ingredients
-                ]
-                cursor.executemany(insert_ingredient_sql, ingredient_values)
-                print(f"Inserted {len(ingredients)} ingredients for recipe '{data.get('name')}'.")
-
+                for ingredient in ingredients:
+                    cursor.execute(insert_ingredient_sql, (recipe_id, ingredient['ingredient_name'], ingredient['quantity']))
+                    ingredient_id = cursor.lastrowid
+                    ingredient['ingredient_id'] = ingredient_id  # Add generated ID to ingredient
+                    ingredient_ids.append(ingredient_id)
+                    print(f"Inserted ingredient '{ingredient['ingredient_name']}' with ID {ingredient_id}.")
 
             connection.commit()
             print("Transaction committed successfully.")
 
-
+            # Return recipe data including generated IDs
             data['recipe_id'] = recipe_id
             data['ingredients'] = ingredients
             return data
@@ -376,6 +457,7 @@ class MySQLRDBDataService(DataDataService):
             if connection:
                 connection.close()
                 print("Database connection closed.")
+
 
 
 

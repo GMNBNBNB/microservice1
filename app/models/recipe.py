@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
 class Ingredient(BaseModel):
-    ingredient_id : int
+    ingredient_id: int
     ingredient_name: str
     quantity: str
 

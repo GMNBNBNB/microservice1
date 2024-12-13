@@ -77,9 +77,11 @@ async def update_recipe_by_id(recipe_id: int, recipe: Recipe, request: Request) 
     - **recipe_id**: The ID of the recipe to update.
     - **recipe**: Recipe object containing the updated data.
     """
+    print("update by id")
     res = ServiceFactory.get_service("RecipeResource")
     update_data = recipe.dict(exclude_unset=True)
     result = res.update_by_key(key_value=recipe_id, key_field="recipe_id", data=update_data)
+    print("result: ", result)
     result_data = result.dict()
     return Recipe(**result_data)
 
