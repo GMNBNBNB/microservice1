@@ -22,7 +22,6 @@ class Recipe(BaseModel):
     class Config:
         json_schema_extra  = {
             "example": {
-                "recipe_id": 171,
                 "name": "Avocado Toast",
                 "ingredients": [
                     {
