@@ -38,9 +38,9 @@ async def root(request: Request):
     return {"message": "Welcome to the recipe search application!", "correlationId": correlation_id}
 
 
-# output openAPI file
-# with open("openapi.json", "w") as f:
-#     json.dump(app.openapi(), f)
+#output openAPI file
+with open("openapi.json", "w") as f:
+    json.dump(app.openapi(), f)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
