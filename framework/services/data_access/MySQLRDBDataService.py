@@ -167,33 +167,111 @@ class MySQLRDBDataService(DataDataService):
 
         return results
 
+    # def update_data(self,
+    #                 database_name: str,
+    #                 collection_name: str,
+    #                 data: dict,
+    #                 key_field: str,
+    #                 key_value: any):
+    #     """
+    #     Update a data object in the specified database and collection/table,
+    #     and update related ingredients if provided.
+    #     """
+    #     connection = None
+
+    #     try:
+    #         connection = self._get_connection()
+    #         cursor = connection.cursor()
+
+    #         connection.begin()
+
+    #         ingredients = data.pop('ingredients', None)
+    #         data.pop('links', None)
+    #         data.pop('recipe_id', None)
+
+    #         for key in list(data.keys()):
+    #             if isinstance(data[key], (dict, list)):
+    #                 print(f"Removing field '{key}' with non-serializable value: {data[key]}")
+    #                 data.pop(key)
+
+    #         if data:
+    #             set_clause = ", ".join([f"`{field}`=%s" for field in data.keys()])
+    #             sql_statement = f"UPDATE `{database_name}`.`{collection_name}` SET {set_clause} WHERE `{key_field}`=%s"
+    #             values = list(data.values()) + [key_value]
+
+    #             print("Data before SQL execution:", data)
+    #             print("Values before SQL execution:", values)
+
+    #             cursor.execute(sql_statement, values)
+    #             print(f"Updated recipes table for {key_field}={key_value}")
+
+    #         select_sql = f"SELECT recipe_id FROM `{database_name}`.`{collection_name}` WHERE `{key_field}`=%s"
+    #         cursor.execute(select_sql, [key_value])
+    #         result = cursor.fetchone()
+    #         if not result:
+    #             raise Exception(f"Recipe with {key_field}={key_value} not found")
+    #         recipe_id = result['recipe_id']
+
+    #         if ingredients is not None:
+    #             delete_sql = f"DELETE FROM `{database_name}`.`ingredients` WHERE `recipe_id`=%s"
+    #             cursor.execute(delete_sql, [recipe_id])
+    #             print(f"Deleted existing ingredients for recipe_id={recipe_id}")
+
+    #             insert_sql = (
+    #                 f"INSERT INTO `{database_name}`.`ingredients` (`recipe_id`, `ingredient_name`, `quantity`) "
+    #                 f"VALUES (%s, %s, %s)"
+    #             )
+    #             ingredient_values = [
+    #                 (recipe_id, ingredient['ingredient_name'], ingredient['quantity'])
+    #                 for ingredient in ingredients
+    #             ]
+    #             cursor.executemany(insert_sql, ingredient_values)
+    #             print(f"Inserted {len(ingredients)} new ingredients for recipe_id={recipe_id}")
+
+    #         connection.commit()
+    #         print("Transaction committed successfully.")
+
+    #     except Exception as e:
+    #         print(f"Error in update_data: {e}")
+    #         if connection:
+    #             connection.rollback()
+    #             print("Transaction rolled back due to error.")
+    #         raise
+
+    #     finally:
+    #         if connection:
+    #             connection.close()
+    #             print("Database connection closed.")
+
     def update_data(self,
-                    database_name: str,
-                    collection_name: str,
-                    data: dict,
-                    key_field: str,
-                    key_value: any):
+                database_name: str,
+                collection_name: str,
+                data: dict,
+                key_field: str,
+                key_value: any):
         """
         Update a data object in the specified database and collection/table,
-        and update related ingredients if provided.
+        and properly update related ingredients if provided.
         """
         connection = None
 
         try:
             connection = self._get_connection()
             cursor = connection.cursor()
-
             connection.begin()
 
+            # Extract ingredients and remove unneeded fields
             ingredients = data.pop('ingredients', None)
             data.pop('links', None)
             data.pop('recipe_id', None)
 
+            # Remove fields with non-serializable values
             for key in list(data.keys()):
                 if isinstance(data[key], (dict, list)):
                     print(f"Removing field '{key}' with non-serializable value: {data[key]}")
                     data.pop(key)
 
+            # Update the main recipe data
             if data:
                 set_clause = ", ".join([f"`{field}`=%s" for field in data.keys()])
                 sql_statement = f"UPDATE `{database_name}`.`{collection_name}` SET {set_clause} WHERE `{key_field}`=%s"
@@ -205,6 +283,7 @@ class MySQLRDBDataService(DataDataService):
                 cursor.execute(sql_statement, values)
                 print(f"Updated recipes table for {key_field}={key_value}")
 
+            # Get the recipe ID
             select_sql = f"SELECT recipe_id FROM `{database_name}`.`{collection_name}` WHERE `{key_field}`=%s"
             cursor.execute(select_sql, [key_value])
             result = cursor.fetchone()
@@ -212,21 +291,60 @@ class MySQLRDBDataService(DataDataService):
                 raise Exception(f"Recipe with {key_field}={key_value} not found")
             recipe_id = result['recipe_id']
 
+            # Update ingredients if provided
             if ingredients is not None:
-                delete_sql = f"DELETE FROM `{database_name}`.`ingredients` WHERE `recipe_id`=%s"
-                cursor.execute(delete_sql, [recipe_id])
-                print(f"Deleted existing ingredients for recipe_id={recipe_id}")
-
-                insert_sql = (
-                    f"INSERT INTO `{database_name}`.`ingredients` (`recipe_id`, `ingredient_name`, `quantity`) "
-                    f"VALUES (%s, %s, %s)"
+                # Get existing ingredients for the recipe
+                select_ingredients_sql = (
+                    f"SELECT `ingredient_name`, `quantity` FROM `{database_name}`.`ingredients` WHERE `recipe_id`=%s"
                 )
-                ingredient_values = [
-                    (recipe_id, ingredient['ingredient_name'], ingredient['quantity'])
-                    for ingredient in ingredients
-                ]
-                cursor.executemany(insert_sql, ingredient_values)
-                print(f"Inserted {len(ingredients)} new ingredients for recipe_id={recipe_id}")
+                cursor.execute(select_ingredients_sql, [recipe_id])
+                existing_ingredients = {row['ingredient_name']: row['quantity'] for row in cursor.fetchall()}
+
+                # Separate ingredients into update, insert, and delete groups
+                ingredients_to_update = []
+                ingredients_to_insert = []
+                existing_names = set(existing_ingredients.keys())
+                provided_names = set(ingredient['ingredient_name'] for ingredient in ingredients)
+
+                # Determine which ingredients to update or insert
+                for ingredient in ingredients:
+                    name = ingredient['ingredient_name']
+                    quantity = ingredient['quantity']
+                    if name in existing_ingredients:
+                        if existing_ingredients[name] != quantity:
+                            ingredients_to_update.append((quantity, recipe_id, name))
+                    else:
+                        ingredients_to_insert.append((recipe_id, name, quantity))
+
+                # Determine which ingredients to delete
+                ingredients_to_delete = list(existing_names - provided_names)
+
+                # Perform updates
+                if ingredients_to_update:
+                    update_sql = (
+                        f"UPDATE `{database_name}`.`ingredients` "
+                        f"SET `quantity`=%s WHERE `recipe_id`=%s AND `ingredient_name`=%s"
+                    )
+                    cursor.executemany(update_sql, ingredients_to_update)
+                    print(f"Updated {len(ingredients_to_update)} ingredients.")
+
+                # Perform inserts
+                if ingredients_to_insert:
+                    insert_sql = (
+                        f"INSERT INTO `{database_name}`.`ingredients` (`recipe_id`, `ingredient_name`, `quantity`) "
+                        f"VALUES (%s, %s, %s)"
+                    )
+                    cursor.executemany(insert_sql, ingredients_to_insert)
+                    print(f"Inserted {len(ingredients_to_insert)} new ingredients.")
+
+                # Perform deletions
+                if ingredients_to_delete:
+                    delete_sql = (
+                        f"DELETE FROM `{database_name}`.`ingredients` "
+                        f"WHERE `recipe_id`=%s AND `ingredient_name`=%s"
+                    )
+                    cursor.executemany(delete_sql, [(recipe_id, name) for name in ingredients_to_delete])
+                    print(f"Deleted {len(ingredients_to_delete)} ingredients.")
 
             connection.commit()
             print("Transaction committed successfully.")
@@ -242,6 +360,7 @@ class MySQLRDBDataService(DataDataService):
             if connection:
                 connection.close()
                 print("Database connection closed.")
+
 
     def delete_data(self,
                     database_name: str,
