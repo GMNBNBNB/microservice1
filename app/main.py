@@ -39,8 +39,8 @@ async def root(request: Request):
 
 
 #output openAPI file
-with open("openapi.json", "w") as f:
-    json.dump(app.openapi(), f)
+# with open("openapi.json", "w") as f:
+#     json.dump(app.openapi(), f)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
